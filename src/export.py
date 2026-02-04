@@ -1,0 +1,122 @@
+"""
+Export trained student model for downstream fine-tuning.
+
+Usage:
+    python src/export.py checkpoint=path/to/checkpoint.ckpt
+"""
+
+from pathlib import Path
+from typing import Any
+
+import hydra
+import torch
+from omegaconf import DictConfig
+
+from src import utils
+
+log = utils.get_pylogger(__name__)
+
+
+def export_student_weights(
+    checkpoint_path: str | Path,
+    output_path: str | Path,
+    student_prefix: str = "student.",
+) -> None:
+    """
+    Export student model weights from a training checkpoint.
+    
+    Args:
+        checkpoint_path: Path to Lightning checkpoint.
+        output_path: Path to save exported weights.
+        student_prefix: Prefix for student weights in state dict.
+    """
+    checkpoint_path = Path(checkpoint_path)
+    output_path = Path(output_path)
+    
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    
+    log.info(f"Loading checkpoint from {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    
+    state_dict = checkpoint.get("state_dict", {})
+    
+    # Extract student weights
+    student_state_dict = {}
+    for key, value in state_dict.items():
+        if key.startswith(student_prefix):
+            new_key = key[len(student_prefix):]
+            student_state_dict[new_key] = value
+    
+    if not student_state_dict:
+        log.warning(f"No weights found with prefix '{student_prefix}'")
+        # Try without prefix
+        student_state_dict = {
+            k: v for k, v in state_dict.items() 
+            if not k.startswith("teacher.")
+        }
+    
+    log.info(f"Exporting {len(student_state_dict)} weight tensors")
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(student_state_dict, output_path)
+    
+    log.info(f"Saved student weights to {output_path}")
+
+
+def export_yolo_model(
+    checkpoint_path: str | Path,
+    output_path: str | Path,
+    model_config: str = "yolov8s.yaml",
+) -> None:
+    """
+    Export as Ultralytics YOLO model.
+    
+    Args:
+        checkpoint_path: Path to Lightning checkpoint.
+        output_path: Path to save YOLO model.
+        model_config: YOLO model configuration file.
+    """
+    try:
+        from ultralytics import YOLO
+    except ImportError:
+        raise ImportError("ultralytics required: pip install ultralytics")
+    
+    checkpoint_path = Path(checkpoint_path)
+    output_path = Path(output_path)
+    
+    # Load checkpoint
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    state_dict = checkpoint.get("state_dict", {})
+    
+    # Extract student weights
+    student_state_dict = {}
+    for key, value in state_dict.items():
+        if key.startswith("student._model."):
+            # Remove "student._model." prefix for YOLO
+            new_key = key.replace("student._model.", "")
+            student_state_dict[new_key] = value
+    
+    # Create YOLO model and load weights
+    model = YOLO(model_config)
+    
+    # Load the backbone weights
+    # Note: This is a simplified version; full implementation would need
+    # to handle the YOLO model structure properly
+    model.save(str(output_path))
+    
+    log.info(f"Saved YOLO model to {output_path}")
+
+
+@hydra.main(version_base="1.3", config_path="configs", config_name="export.yaml")
+def main(cfg: DictConfig):
+    """Hydra entry point for export."""
+    export_student_weights(
+        checkpoint_path=cfg.checkpoint,
+        output_path=cfg.output,
+        student_prefix=cfg.get("student_prefix", "student."),
+    )
+
+
+if __name__ == "__main__":
+    main()

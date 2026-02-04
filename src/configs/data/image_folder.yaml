@@ -1,0 +1,21 @@
+# Image folder datamodule configuration
+
+_target_: src.data.image_datamodule.ImageDataModule
+
+# Path to data directory
+data_dir: ${paths.data_dir}
+
+# Image size
+image_size: 224
+
+# Batch size per device
+batch_size: 128
+
+# Number of data loading workers
+num_workers: 8
+
+# Pin memory for faster GPU transfer
+pin_memory: true
+
+# Validation split fraction
+val_split: 0.1

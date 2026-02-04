@@ -1,0 +1,39 @@
+# Distillation module configuration
+
+_target_: src.methods.distillation_module.DistillationModule
+
+# Teacher model (instantiated from teacher config)
+teacher:
+  _target_: src.models.teachers.dinov2.DINOv2Teacher
+  model_name: ${teacher.model_name}
+  n_blocks: ${teacher.n_blocks}
+  weights_path: ${teacher.weights_path}
+
+# Student model (instantiated from student config)
+student:
+  _target_: src.models.students.yolo.YOLOWrapper
+  model_name: ${student.model_name}
+  pretrained: ${student.pretrained}
+
+# Optimizer
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 1e-3
+  weight_decay: 1e-4
+
+# Scheduler
+scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  _partial_: true
+  T_max: ${trainer.max_epochs}
+  eta_min: 1e-6
+
+# Projection head
+n_projection_layers: 1
+projection_hidden_dim: 2048
+
+# Training settings
+use_mixup: true
+lr_scale_method: "sqrt"
+reference_batch_size: 256

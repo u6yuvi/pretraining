@@ -1,0 +1,5 @@
+# DINOv2 ViT-S/14 teacher configuration
+
+model_name: "dinov2_vits14"
+n_blocks: 2
+weights_path: null

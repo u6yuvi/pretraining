@@ -1,0 +1,10 @@
+# Weights & Biases logger configuration
+
+wandb:
+  _target_: lightning.pytorch.loggers.WandbLogger
+  project: "distillation"
+  name: ${task_name}
+  save_dir: ${paths.log_dir}
+  offline: false
+  log_model: false
+  tags: ["distillation", "dinov2", "yolo"]

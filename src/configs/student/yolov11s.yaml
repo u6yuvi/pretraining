@@ -1,0 +1,4 @@
+# YOLO11s student configuration
+
+model_name: "yolo11s.yaml"
+pretrained: false

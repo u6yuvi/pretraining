@@ -1,0 +1,8 @@
+# TensorBoard logger configuration
+
+tensorboard:
+  _target_: lightning.pytorch.loggers.TensorBoardLogger
+  save_dir: ${paths.log_dir}
+  name: "tensorboard"
+  version: ""
+  default_hp_metric: false

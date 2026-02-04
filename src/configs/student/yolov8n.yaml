@@ -1,0 +1,4 @@
+# YOLOv8n student configuration (nano)
+
+model_name: "yolov8n.yaml"
+pretrained: false

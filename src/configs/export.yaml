@@ -1,0 +1,14 @@
+# Export configuration
+
+defaults:
+  - paths: default.yaml
+  - hydra: default.yaml
+
+# Path to checkpoint
+checkpoint: ???  # Required
+
+# Output path for exported model
+output: ${paths.output_dir}/exported_model.pt
+
+# Prefix for student weights in state dict
+student_prefix: "student."

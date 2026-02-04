@@ -1,0 +1,23 @@
+# @package _global_
+
+# YOLO11s + DINOv2 ViT-B/14 experiment
+
+defaults:
+  - override /data: image_folder.yaml
+  - override /model: distillation.yaml
+  - override /teacher: dinov2_vitb14.yaml
+  - override /student: yolov11s.yaml
+  - override /trainer: default.yaml
+  - override /callbacks: default.yaml
+  - override /logger: tensorboard.yaml
+
+task_name: "yolo11s_dinov2_vitb14"
+
+trainer:
+  max_epochs: 100
+
+data:
+  batch_size: 128
+  image_size: 224
+
+seed: 42

@@ -1,0 +1,26 @@
+# Default trainer configuration
+
+_target_: lightning.Trainer
+
+# Training duration
+max_epochs: 100
+
+# Hardware
+accelerator: "auto"
+devices: "auto"
+precision: "16-mixed"
+
+# Logging
+log_every_n_steps: 50
+
+# Gradient clipping
+gradient_clip_val: 1.0
+
+# Checkpointing
+enable_checkpointing: true
+
+# Progress bar
+enable_progress_bar: true
+
+# Determinism (set to false for speed)
+deterministic: false

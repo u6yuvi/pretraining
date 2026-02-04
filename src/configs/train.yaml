@@ -1,0 +1,38 @@
+# @package _global_
+
+# Main training configuration
+# Override with: python src/train.py <key>=<value>
+
+defaults:
+  - _self_
+  - data: image_folder.yaml
+  - model: distillation.yaml
+  - teacher: dinov2_vitb14.yaml
+  - student: yolov8s.yaml
+  - trainer: default.yaml
+  - callbacks: default.yaml
+  - logger: tensorboard.yaml
+  - paths: default.yaml
+  - hydra: default.yaml
+
+  # Experiment overrides (optional)
+  - experiment: null
+
+# Task settings
+task_name: "distillation"
+train: true
+test: false
+compile: false
+
+# Checkpoint to resume from
+ckpt_path: null
+
+# Random seed
+seed: 42
+
+# Metric for hyperparameter optimization
+optimized_metric: "val/loss"
+
+# Print config
+print_config: false
+ignore_warnings: true

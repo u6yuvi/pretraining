@@ -1,0 +1,4 @@
+# YOLOv8s student configuration
+
+model_name: "yolov8s.yaml"
+pretrained: false
