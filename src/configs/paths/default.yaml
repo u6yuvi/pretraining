@@ -4,13 +4,13 @@
 root_dir: ${oc.env:PROJECT_ROOT,${hydra:runtime.cwd}}
 
 # Data directory
-data_dir: ${root_dir}/data
+data_dir: ${paths.root_dir}/data
 
 # Output directory for logs, checkpoints, etc.
-output_dir: ${root_dir}/outputs/${task_name}
+output_dir: ${paths.root_dir}/outputs/${task_name}
 
 # Log directory
-log_dir: ${output_dir}/logs
+log_dir: ${paths.output_dir}/logs
 
 # Checkpoint directory
-ckpt_dir: ${output_dir}/checkpoints
+ckpt_dir: ${paths.output_dir}/checkpoints

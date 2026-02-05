@@ -23,28 +23,38 @@ Pretrain detection backbones using knowledge distillation from DINOv2 vision fou
 
 ## Installation
 
+**YOLO (ultralytics) is required for the default student model.** Install it via the `yolo` extra.
+
 ```bash
 # Clone repository
 git clone https://github.com/yourusername/pretraining.git
 cd pretraining
 
-# Install with pip
-pip install -e .
+# With uv (recommended)
+uv sync --extra yolo              # install with YOLO support
+uv run src/train.py ...           # run training
 
-# With YOLO support
-pip install -e ".[yolo]"
+# Or install extras at run time (no sync needed)
+uv run --extra yolo src/train.py data.data_dir=/path/to/images
+
+# With pip
+pip install -e ".[yolo]"          # install with YOLO support
 
 # With all dependencies
-pip install -e ".[all]"
+uv sync --extra all
+# or: pip install -e ".[all]"
 ```
 
 ## Quick Start
 
 ### Training with Hydra
 
+Install the `yolo` extra first (`uv sync --extra yolo` or `pip install -e ".[yolo]"`), then:
+
 ```bash
 # Default training (YOLOv8s + DINOv2 ViT-B/14)
-python src/train.py data.data_dir=/path/to/images
+uv run src/train.py data.data_dir=/path/to/images
+# or: python src/train.py data.data_dir=/path/to/images
 
 # Override student model
 python src/train.py student=yolov8n data.data_dir=/path/to/images

@@ -7,6 +7,7 @@ defaults:
   - _self_
   - data: image_folder.yaml
   - model: distillation.yaml
+  - monitoring: default.yaml
   - teacher: dinov2_vitb14.yaml
   - student: yolov8s.yaml
   - trainer: default.yaml

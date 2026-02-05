@@ -42,6 +42,9 @@ class DistillationModule(LightningModule):
         n_projection_layers: Number of projection head layers.
         projection_hidden_dim: Hidden dim of projection head.
         use_mixup: Whether to apply mixup augmentation.
+        monitor_grad_norms: Whether to log gradient norms.
+        monitor_feat_align: Whether to log feature alignment metrics.
+        grad_log_every_n_steps: Log gradient norms every N steps.
         lr_scale_method: "linear" or "sqrt" for batch size scaling.
         reference_batch_size: Reference batch size for LR scaling.
     """
@@ -55,6 +58,9 @@ class DistillationModule(LightningModule):
         n_projection_layers: int = 1,
         projection_hidden_dim: int = 2048,
         use_mixup: bool = True,
+        monitor_grad_norms: bool = True,
+        monitor_feat_align: bool = True,
+        grad_log_every_n_steps: int = 50,
         lr_scale_method: str = "sqrt",
         reference_batch_size: int = 256,
     ) -> None:
@@ -82,6 +88,9 @@ class DistillationModule(LightningModule):
         
         # --- Config ---
         self.use_mixup = use_mixup
+        self.monitor_grad_norms = monitor_grad_norms
+        self.monitor_feat_align = monitor_feat_align
+        self.grad_log_every_n_steps = max(1, grad_log_every_n_steps)
         self.lr_scale_method = lr_scale_method
         self.reference_batch_size = reference_batch_size
         
@@ -159,6 +168,12 @@ class DistillationModule(LightningModule):
         
         # Log
         self.log("train/loss", loss, prog_bar=True, sync_dist=True)
+
+        if self.monitor_feat_align:
+            feat_cos = F.cosine_similarity(
+                teacher_features, student_features, dim=-1
+            ).mean()
+            self.log("train/feat_cosine", feat_cos, prog_bar=False, sync_dist=True)
         
         return loss
     
@@ -181,8 +196,43 @@ class DistillationModule(LightningModule):
         loss = self.criterion(teacher_features, student_features)
         
         self.log("val/loss", loss, prog_bar=True, sync_dist=True)
+
+        if self.monitor_feat_align:
+            feat_cos = F.cosine_similarity(
+                teacher_features, student_features, dim=-1
+            ).mean()
+            self.log("val/feat_cosine", feat_cos, prog_bar=False, sync_dist=True)
         
         return loss
+
+    def on_after_backward(self) -> None:
+        """Log gradient norms after backward pass."""
+        if not self.monitor_grad_norms:
+            return
+        if self.global_step % self.grad_log_every_n_steps != 0:
+            return
+
+        student_norm = self._grad_norm(self.student.parameters())
+        head_norm = self._grad_norm(self.projection_head.parameters())
+        global_norm = torch.sqrt(student_norm**2 + head_norm**2)
+
+        self.log("train/grad_norm_student", student_norm, prog_bar=False, sync_dist=True)
+        self.log("train/grad_norm_head", head_norm, prog_bar=False, sync_dist=True)
+        self.log("train/grad_norm_global", global_norm, prog_bar=False, sync_dist=True)
+
+    @staticmethod
+    def _grad_norm(params: Any) -> Tensor:
+        """Compute L2 norm of gradients for a parameter list."""
+        total = None
+        for p in params:
+            if p.grad is None:
+                continue
+            grad = p.grad.detach()
+            grad_norm = torch.linalg.vector_norm(grad)
+            total = grad_norm if total is None else total + grad_norm**2
+        if total is None:
+            return torch.tensor(0.0)
+        return torch.sqrt(total)
     
     def configure_optimizers(self) -> Dict[str, Any]:
         """Configure optimizer and scheduler."""

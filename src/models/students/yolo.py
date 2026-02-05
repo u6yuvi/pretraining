@@ -45,15 +45,15 @@ class YOLOWrapper(StudentWrapper):
                 "Install with: pip install ultralytics"
             )
         
-        # Load model
+        # Load model (store in a list to avoid nn.Module registration)
         logger.info(f"Loading YOLO model: {model_name}")
-        self._yolo = YOLO(model_name)
+        self._yolo = [YOLO(model_name)]
         
         # Enable gradients
         self._enable_gradients()
         
-        # Set to training mode
-        self._yolo.model.train()
+        # Set underlying torch model to training mode
+        self._yolo[0].model.train()
         
         # Extract backbone
         self._backbone, self._feature_dim = self._get_backbone()
@@ -62,7 +62,7 @@ class YOLOWrapper(StudentWrapper):
     
     def _enable_gradients(self) -> None:
         """Enable gradients on all model parameters."""
-        for param in self._yolo.model.parameters():
+        for param in self._yolo[0].model.parameters():
             param.requires_grad = True
     
     def _get_backbone(self) -> tuple[nn.Sequential, int]:
@@ -70,7 +70,7 @@ class YOLOWrapper(StudentWrapper):
         from ultralytics.nn.modules.block import C2f, C3, SPPF
         from ultralytics.nn.modules.head import Classify
         
-        seq = self._yolo.model.model
+        seq = self._yolo[0].model.model
         assert isinstance(seq, nn.Sequential)
         
         for idx, module in enumerate(seq):
@@ -103,4 +103,4 @@ class YOLOWrapper(StudentWrapper):
     
     def get_model(self) -> Any:
         """Return the full YOLO model for export."""
-        return self._yolo
+        return self._yolo[0]

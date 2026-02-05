@@ -35,5 +35,8 @@ projection_hidden_dim: 2048
 
 # Training settings
 use_mixup: true
+monitor_grad_norms: ${monitoring.grad_norms}
+monitor_feat_align: ${monitoring.feature_align}
+grad_log_every_n_steps: ${monitoring.grad_log_every_n_steps}
 lr_scale_method: "sqrt"
 reference_batch_size: 256
