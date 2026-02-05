@@ -6,7 +6,7 @@ Usage:
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Dict
 
 import hydra
 import torch
@@ -68,6 +68,7 @@ def export_yolo_model(
     checkpoint_path: str | Path,
     output_path: str | Path,
     model_config: str = "yolov8s.yaml",
+    backbone_prefix: str = "student._backbone.",
 ) -> None:
     """
     Export as Ultralytics YOLO model.
@@ -89,33 +90,60 @@ def export_yolo_model(
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     state_dict = checkpoint.get("state_dict", {})
     
-    # Extract student weights
-    student_state_dict = {}
+    # Extract backbone weights from student
+    student_state_dict: Dict[str, torch.Tensor] = {}
     for key, value in state_dict.items():
-        if key.startswith("student._model."):
-            # Remove "student._model." prefix for YOLO
-            new_key = key.replace("student._model.", "")
+        if key.startswith(backbone_prefix):
+            # Remove "student._backbone." prefix
+            new_key = key[len(backbone_prefix):]
             student_state_dict[new_key] = value
+
+    if not student_state_dict:
+        raise ValueError(
+            f"No backbone weights found with prefix '{backbone_prefix}'. "
+            "Expected keys like 'student._backbone.0.conv.weight'."
+        )
     
     # Create YOLO model and load weights
     model = YOLO(model_config)
-    
-    # Load the backbone weights
-    # Note: This is a simplified version; full implementation would need
-    # to handle the YOLO model structure properly
+
+    # Map backbone keys to YOLO model keys
+    # Example: _backbone.0.conv.weight -> model.0.conv.weight
+    mapped_state_dict = {}
+    for key, value in student_state_dict.items():
+        mapped_state_dict[f"model.{key}"] = value
+
+    missing, unexpected = model.model.load_state_dict(mapped_state_dict, strict=False)
+    log.info(f"Loaded backbone weights into YOLO model.")
+    if missing:
+        log.info(f"Missing keys (expected for neck/head): {len(missing)}")
+    if unexpected:
+        log.warning(f"Unexpected keys while loading: {unexpected}")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(output_path))
-    
+
     log.info(f"Saved YOLO model to {output_path}")
 
 
 @hydra.main(version_base="1.3", config_path="configs", config_name="export.yaml")
 def main(cfg: DictConfig):
     """Hydra entry point for export."""
-    export_student_weights(
-        checkpoint_path=cfg.checkpoint,
-        output_path=cfg.output,
-        student_prefix=cfg.get("student_prefix", "student."),
-    )
+    export_format = cfg.get("export_format", "student_weights")
+
+    if export_format == "yolo":
+        export_yolo_model(
+            checkpoint_path=cfg.checkpoint,
+            output_path=cfg.output,
+            model_config=cfg.get("yolo_model_config", "yolov8s.yaml"),
+            backbone_prefix=cfg.get("yolo_backbone_prefix", "student._backbone."),
+        )
+    else:
+        export_student_weights(
+            checkpoint_path=cfg.checkpoint,
+            output_path=cfg.output,
+            student_prefix=cfg.get("student_prefix", "student."),
+        )
 
 
 if __name__ == "__main__":

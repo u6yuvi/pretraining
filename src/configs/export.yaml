@@ -10,5 +10,12 @@ checkpoint: ???  # Required
 # Output path for exported model
 output: ${paths.output_dir}/exported_model.pt
 
+# Export format: "student_weights" or "yolo"
+export_format: "student_weights"
+
 # Prefix for student weights in state dict
 student_prefix: "student."
+
+# YOLO export settings (used when export_format="yolo")
+yolo_model_config: "yolov8s.yaml"
+yolo_backbone_prefix: "student._backbone."

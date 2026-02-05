@@ -75,7 +75,15 @@ python src/train.py trainer=cpu data.data_dir=/path/to/images
 ### Export Pretrained Model
 
 ```bash
+# Export raw student weights (backbone only)
 python src/export.py checkpoint=outputs/distillation/checkpoints/last.ckpt
+
+# Export YOLO-loadable model (backbone weights mapped into full YOLO)
+python src/export.py \
+  checkpoint=outputs/distillation/checkpoints/last.ckpt \
+  export_format=yolo \
+  yolo_model_config=yolov8s.yaml \
+  output=outputs/distillation/exported_yolo.pt
 ```
 
 ### Fine-tune with YOLO
@@ -83,8 +91,8 @@ python src/export.py checkpoint=outputs/distillation/checkpoints/last.ckpt
 ```python
 from ultralytics import YOLO
 
-# Load pretrained backbone
-model = YOLO("outputs/distillation/exported_model.pt")
+# Load YOLO-ready export
+model = YOLO("outputs/distillation/exported_yolo.pt")
 
 # Fine-tune on detection
 model.train(data="coco8.yaml", epochs=50)
